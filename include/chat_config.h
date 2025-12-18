@@ -1,0 +1,31 @@
+#ifndef CHAT_CONFIG_H
+#define CHAT_CONFIG_H
+
+
+#include <sys/types.h>
+
+
+#define SERVER_FIFO_PATH "/tmp/server_fifo"
+#define CLIENT_FIFO_PATH_FORMAT "/tmp/client_fifo_%d"
+
+
+#define MAX_FIFO_PATH 256
+#define MAX_CONTENT 256
+#define MAX_CLIENTS 128
+
+
+// Message types
+#define MSG_TYPE_CONNECT 1
+#define MSG_TYPE_CHAT 2
+#define MSG_TYPE_DISCONNECT 3
+
+
+typedef struct {
+	int type; // MSG_TYPE_*
+	pid_t pid; // sender pid
+	char fifo_path[MAX_FIFO_PATH]; // used for CONNECT
+	char content[MAX_CONTENT]; // used for CHAT
+} Message;
+
+
+#endif // CHAT_CONFIG_H

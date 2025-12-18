@@ -1,0 +1,17 @@
+# ===== Build output =====
+server
+client
+build/
+*.o
+
+# ===== Editor / OS =====
+*~
+*.swp
+.DS_Store
+
+# ===== Debug =====
+core
+core.*
+
+# ===== IPC artifacts (just in case) =====
+*.fifo
