@@ -170,11 +170,27 @@ int main(void) {
 		} else if (r == 0) {
 			// EOF - all clients closed their write ends, but dummy writer still has it open
 			// Must close and reopen to reset the file descriptor state
-			printf("[server] Received EOF, reopening FIFO to accept new clients...\n");
+			printf("[server] Received EOF, waiting a bit before reopening FIFO...\n");
 			close(server_fd);
-			server_fd = open(SERVER_FIFO_PATH, O_RDONLY);
+			usleep(100000); // 100ms delay to avoid race condition
+			
+			// Retry opening with timeout-like behavior
+			int retries = 5;
+			while (retries > 0) {
+				server_fd = open(SERVER_FIFO_PATH, O_RDONLY | O_NONBLOCK);
+				if (server_fd != -1) {
+					// Successfully opened, switch to blocking mode
+					int flags = fcntl(server_fd, F_GETFL);
+					fcntl(server_fd, F_SETFL, flags & ~O_NONBLOCK);
+					printf("[server] FIFO reopened successfully\n");
+					break;
+				}
+				retries--;
+				if (retries > 0) usleep(50000); // 50ms between retries
+			}
+			
 			if (server_fd == -1) {
-				perror("reopen server fifo");
+				perror("reopen server fifo after retries");
 				break;
 			}
 			continue;
