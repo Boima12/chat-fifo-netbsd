@@ -169,8 +169,14 @@ int main(void) {
 			break;
 		} else if (r == 0) {
 			// EOF - all clients closed their write ends, but dummy writer still has it open
-			// Just continue waiting for next message
-			printf("[server] Received EOF, waiting for next client...\n");
+			// Must close and reopen to reset the file descriptor state
+			printf("[server] Received EOF, reopening FIFO to accept new clients...\n");
+			close(server_fd);
+			server_fd = open(SERVER_FIFO_PATH, O_RDONLY);
+			if (server_fd == -1) {
+				perror("reopen server fifo");
+				break;
+			}
 			continue;
 		} else if (r != sizeof(Message)) {
 			// partial read -- ignore
