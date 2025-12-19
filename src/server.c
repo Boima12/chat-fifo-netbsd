@@ -97,6 +97,16 @@ void cleanup_clients() {
 	clients_head = NULL;
 }
 
+int count_clients(void) {
+	int count = 0;
+	ClientNode *cur = clients_head;
+	while (cur) {
+		count++;
+		cur = cur->next;
+	}
+	return count;
+}
+
 void cleanup_and_exit(int status) {
 	if (server_fd != -1) close(server_fd);
 	unlink(SERVER_FIFO_PATH);
@@ -123,10 +133,30 @@ int main(void) {
 
 	printf("[server] Starting. Server FIFO: %s\n", SERVER_FIFO_PATH);
 
-	// open server FIFO for reading + writing (to avoid blocking on open)
-	server_fd = open(SERVER_FIFO_PATH, O_RDWR);
+	// Fork a child to keep write end open (dummy writer)
+	pid_t dummy_pid = fork();
+	if (dummy_pid == -1) {
+		perror("fork dummy writer");
+		cleanup_and_exit(1);
+	}
+	
+	if (dummy_pid == 0) {
+		// Child: keep write end open indefinitely
+		int dummy_fd = open(SERVER_FIFO_PATH, O_WRONLY);
+		if (dummy_fd == -1) {
+			perror("dummy writer open");
+			exit(1);
+		}
+		// Just sleep; this process keeps the write end open
+		while (1) sleep(1);
+		exit(0);
+	}
+	
+	// Parent: open for reading only
+	server_fd = open(SERVER_FIFO_PATH, O_RDONLY);
 	if (server_fd == -1) {
 		perror("open server fifo");
+		kill(dummy_pid, SIGTERM);
 		cleanup_and_exit(1);
 	}
 
@@ -140,7 +170,7 @@ int main(void) {
 		} else if (r == 0) {
 			// all writers closed; reopen
 			close(server_fd);
-			server_fd = open(SERVER_FIFO_PATH, O_RDWR);
+			server_fd = open(SERVER_FIFO_PATH, O_RDONLY);
 			if (server_fd == -1) {
 				perror("reopen server fifo");
 				break;
@@ -160,7 +190,8 @@ int main(void) {
 			remove_client(msg.pid);
 		} else if (msg.type == MSG_TYPE_CHAT) {
 			printf("[server] chat from %d: %s\n", msg.pid, msg.content);
-			printf("[server] broadcasting to %d other clients\n", 0); // counting clients logic here
+			int num_clients = count_clients();
+			printf("[server] broadcasting to %d other client(s)\n", num_clients - 1);
 			// broadcast
 			broadcast_message(&msg);
 		} else {
