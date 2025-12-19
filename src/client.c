@@ -83,9 +83,10 @@ int main(void) {
 
 	if (child == 0) {
 		// Child: read from private fifo
-		int priv_fd = open(client_fifo_path, O_RDONLY);
+		// Open in O_RDWR to ensure read doesn't return 0 when no external writer
+		int priv_fd = open(client_fifo_path, O_RDWR);
 		if (priv_fd == -1) {
-			perror("open private fifo for read");
+			perror("open private fifo for read/write");
 			exit(1);
 		}
 
