@@ -209,7 +209,9 @@ int main(void) {
 		} else if (msg.type == MSG_TYPE_CHAT) {
 			printf("[server] chat from %d: %s\n", msg.pid, msg.content);
 			int num_clients = count_clients();
-			printf("[server] broadcasting to %d other client(s)\n", num_clients - 1);
+			int others = num_clients - 1;
+			if (others < 0) others = 0;
+			printf("[server] broadcasting to %d other client(s)\n", others);
 			// broadcast
 			broadcast_message(&msg);
 		} else {

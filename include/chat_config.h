@@ -9,7 +9,7 @@
 #define CLIENT_FIFO_PATH_FORMAT "/tmp/client_fifo_%d"
 
 
-#define MAX_FIFO_PATH 256
+#define MAX_FIFO_PATH 128
 #define MAX_CONTENT 256
 #define MAX_CLIENTS 128
 
@@ -26,6 +26,10 @@ typedef struct {
 	char fifo_path[MAX_FIFO_PATH]; // used for CONNECT
 	char content[MAX_CONTENT]; // used for CHAT
 } Message;
+
+// Ensure message size fits in PIPE_BUF to keep writes atomic on FIFOs.
+// Most POSIX systems guarantee PIPE_BUF >= 512. Our struct must be <= 512 bytes.
+_Static_assert(sizeof(Message) <= 512, "Message exceeds PIPE_BUF; reduce fields or use a union");
 
 
 #endif // CHAT_CONFIG_H
