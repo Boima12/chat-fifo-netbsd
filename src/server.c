@@ -123,17 +123,11 @@ int main(void) {
 
 	printf("[server] Starting. Server FIFO: %s\n", SERVER_FIFO_PATH);
 
-	// open server FIFO for reading (blocking)
-	server_fd = open(SERVER_FIFO_PATH, O_RDONLY);
+	// open server FIFO for reading + writing (to avoid blocking on open)
+	server_fd = open(SERVER_FIFO_PATH, O_RDWR);
 	if (server_fd == -1) {
 		perror("open server fifo");
 		cleanup_and_exit(1);
-	}
-
-	// Additionally open a write end so that read doesn't return 0 when no clients
-	int dummy_write = open(SERVER_FIFO_PATH, O_WRONLY | O_NONBLOCK);
-	if (dummy_write == -1) {
-		// not fatal; it's okay
 	}
 
 	while (keep_running) {
@@ -146,7 +140,7 @@ int main(void) {
 		} else if (r == 0) {
 			// all writers closed; reopen
 			close(server_fd);
-			server_fd = open(SERVER_FIFO_PATH, O_RDONLY);
+			server_fd = open(SERVER_FIFO_PATH, O_RDWR);
 			if (server_fd == -1) {
 				perror("reopen server fifo");
 				break;
@@ -166,6 +160,7 @@ int main(void) {
 			remove_client(msg.pid);
 		} else if (msg.type == MSG_TYPE_CHAT) {
 			printf("[server] chat from %d: %s\n", msg.pid, msg.content);
+			printf("[server] broadcasting to %d other clients\n", 0); // counting clients logic here
 			// broadcast
 			broadcast_message(&msg);
 		} else {
@@ -174,7 +169,6 @@ int main(void) {
 	}
 
 
-	if (dummy_write != -1) close(dummy_write);
 	cleanup_and_exit(0);
 	return 0;
 }
