@@ -159,6 +159,9 @@ int main(void) {
 
 		if (msg.type == MSG_TYPE_CONNECT) {
 			add_client(msg.pid, msg.fifo_path);
+
+			printf("[server] Client connected: pid=%d fifo=%s\n", msg.pid, msg.fifo_path);
+
 		} else if (msg.type == MSG_TYPE_DISCONNECT) {
 			remove_client(msg.pid);
 		} else if (msg.type == MSG_TYPE_CHAT) {
