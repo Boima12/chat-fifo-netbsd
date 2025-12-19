@@ -168,13 +168,9 @@ int main(void) {
 			perror("read server fifo");
 			break;
 		} else if (r == 0) {
-			// all writers closed; reopen
-			close(server_fd);
-			server_fd = open(SERVER_FIFO_PATH, O_RDONLY);
-			if (server_fd == -1) {
-				perror("reopen server fifo");
-				break;
-			}
+			// EOF - all clients closed their write ends, but dummy writer still has it open
+			// Just continue waiting for next message
+			printf("[server] Received EOF, waiting for next client...\n");
 			continue;
 		} else if (r != sizeof(Message)) {
 			// partial read -- ignore

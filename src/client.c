@@ -45,14 +45,17 @@ int main(void) {
 			return 1;
 		}
 	}
+	printf("[client] Private FIFO: %s\n", client_fifo_path);
 
 	// open server FIFO for writing (blocks until server opens for reading)
+	printf("[client] Attempting to connect to server...\n");
 	server_fd = open(SERVER_FIFO_PATH, O_WRONLY);
 	if (server_fd == -1) {
 		perror("open server fifo for write");
 		unlink(client_fifo_path);
 		return 1;
 	}
+	printf("[client] Connected to server\n");
 
 	// send CONNECT message
 	Message conn_msg;
